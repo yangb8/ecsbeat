@@ -1,0 +1,5 @@
+= Ecsbeat Docs
+
+Welcome to the Ecsbeat documentation.
+
+

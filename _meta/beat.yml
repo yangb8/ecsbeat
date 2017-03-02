@@ -1,0 +1,7 @@
+################### Ecsbeat Configuration Example #########################
+
+############################# Ecsbeat ######################################
+
+ecsbeat:
+  # Defines how often an event is sent to the output
+  period: 1s
