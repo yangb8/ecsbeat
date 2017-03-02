@@ -2,7 +2,7 @@
 
 Welcome to Ecsbeat.
 
-Ensure that this folder is at the following location:
+Ensure env variables GOPATH and GOROOT are set properly, and this folder is at the following location:
 `${GOPATH}/github.com/yangb8`
 
 ## Getting Started with Ecsbeat
@@ -10,6 +10,7 @@ Ensure that this folder is at the following location:
 ### Requirements
 
 * [Golang](https://golang.org/dl/) 1.7
+* [glide](https://github.com/Masterminds/glide)
 
 ### Init Project
 To get running with Ecsbeat and also install the
@@ -39,12 +40,12 @@ in the same directory with the name ecsbeat.
 make
 ```
 
-
 ### Run
 
 To run Ecsbeat with debugging output enabled, run:
 
 ```
+modify ecsbeat.yml based on your ecs env
 ./ecsbeat -c ecsbeat.yml -e -d "*"
 ```
 
@@ -117,3 +118,15 @@ make package
 ```
 
 This will fetch and create all images required for the build process. The hole process to finish can take several minutes.
+
+## Example of Common Fields in Output
+```
+  "ecs-customer": "EMC",
+  "ecs-event-type": "disks",
+  "ecs-node-ip": "10.1.83.51",                  # only if the event is on node level
+  "ecs-node-name": "ecs-obj-1-1.plylab.local",  # only if the event is on node level
+  "ecs-vdc-cfgname": "VDC1",
+  "ecs-vdc-id": "urn:storageos:VirtualDataCenterData:407b6b6c-bda4-4ba4-89f7-220ac3d9c044",
+  "ecs-vdc-name": "plylab",
+  "ecs-version": "3.0.0.0.86239.1c9e5ec",
+```
