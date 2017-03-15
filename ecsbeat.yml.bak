@@ -3,7 +3,8 @@
 ############################# Ecsbeat ######################################
 ecsbeat:
   # Defines how often an event is sent to the output
-  period: 30s
+  # Can use commanad level interval to overwrite it
+  period: 60s
 
   # Customer ECS Setup
   customers:
@@ -48,27 +49,39 @@ ecsbeat:
     - uri: /vdc/alerts.json
       type: alert
       level: vdc
+      interval: 5s
     - uri: /dashboard/zones/localzone?dataType=current
       type: localzone
       level: vdc
+      interval: 0
     - uri: /dashboard/zones/localzone/nodes?dataType=current
       type: nodes
       level: vdc
+      interval: 0
     - uri: /dashboard/zones/localzone/replicationgroups?dataType=current
       type: replicationgroups
       level: vdc
+      interval: 0
     - uri: /dashboard/zones/localzone/storagepools?dataType=current
       type: storagepools
       level: vdc
+      interval: 0
     - uri: /dashboard/nodes/%s/disks?dataType=current
       type: disks
       level: node
+      interval: 0
+    - uri: /dashboard/nodes/%s/processes?dataType=current
+      type: processes
+      level: node
+      interval: 0
     - uri: /object/capacity.json
       type: capacity
       level: system
+      interval: 0
     - uri: /object/billing/namespace/info.json
       type: nsbilling
       level: system
+      interval: 0
       #- uri: /diagnostic/DumpOwnershipInfo/
       #type: dtinfo
       #level: node
