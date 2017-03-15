@@ -15,12 +15,11 @@ var debugf = logp.MakeDebug("ecsbeat")
 type Worker struct {
 	cmd         *Command
 	ecsClusters *EcsClusters
-	period      time.Duration
 }
 
 // NewWorker ...
-func NewWorker(cmd *Command, ecsClusters *EcsClusters, period time.Duration) *Worker {
-	return &Worker{cmd, ecsClusters, period}
+func NewWorker(cmd *Command, ecsClusters *EcsClusters) *Worker {
+	return &Worker{cmd, ecsClusters}
 }
 
 // Start should be called only once in the life of a Worker.
@@ -56,7 +55,7 @@ func (w *Worker) startFetching(done <-chan struct{}, out chan<- common.MapStr) {
 	}
 
 	// Start timer for future fetches.
-	t := time.NewTicker(w.period)
+	t := time.NewTicker(w.cmd.Interval)
 	defer t.Stop()
 	for {
 		select {

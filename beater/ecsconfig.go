@@ -115,7 +115,8 @@ func convertMapStringInterface(val interface{}) map[string]interface{} {
 
 // Command ...
 type Command struct {
-	URI   string
-	Type  string
-	Level string
+	URI      string
+	Type     string
+	Level    string
+	Interval time.Duration
 }
