@@ -37,7 +37,7 @@ func New(b *beat.Beat, cfg *common.Config) (beat.Beater, error) {
 	}
 
 	// Init Cofingurations for Ecs Clusters
-	bt.ecsClusters.Refresh()
+	bt.ecsClusters.Refresh(true)
 
 	for _, c := range ec.Cmds {
 		w := NewWorker(c, bt.ecsClusters)

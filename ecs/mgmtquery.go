@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -43,14 +44,34 @@ type MgmtClient struct {
 
 // PerformRequest sends request to ECS
 func (e *MgmtClient) PerformRequest(method, uri string, body io.Reader, bodyLength int64, headers http.Header, auth Authentication, vdc string) (*http.Response, error) {
-	return e.PerformRequestBase(method, "https", "4443", uri, body, bodyLength, headers, auth, vdc)
+	return e.PerformRequestBase(method, "https", "", uri, body, bodyLength, headers, auth, vdc)
+}
+
+func parseHostPort(s string) (hostname, port string) {
+	pair := strings.Split(s, ":")
+	if len(pair) > 0 {
+		hostname = pair[0]
+	}
+	if len(pair) > 1 {
+		port = pair[1]
+	}
+	return
 }
 
 // PerformRequestBase sends request to ECS
 func (e *MgmtClient) PerformRequestBase(method, scheme, port, uri string, body io.Reader, bodyLength int64, headers http.Header, auth Authentication, vdc string) (*http.Response, error) {
-	host, err := e.ecs.NextAvailableNode(vdc)
+	h, err := e.ecs.NextAvailableNode(vdc)
 	if err != nil {
 		return nil, err
+	}
+
+	host, pport := parseHostPort(h)
+	if port == "" {
+		if pport != "" {
+			port = pport
+		} else {
+			port = "4443"
+		}
 	}
 
 	req, err := http.NewRequest(method, scheme+"://"+host+":"+port+uri, body)
@@ -128,7 +149,7 @@ func (e *MgmtClient) MgmtLogin() (err error) {
 
 // GetQuery sends Get request to ECS
 func (e *MgmtClient) GetQuery(uri string, vdc string) (*http.Response, error) {
-	return e.GetQueryBase("https", "4443", uri, vdc)
+	return e.GetQueryBase("https", "", uri, vdc)
 }
 
 // GetQueryBase sends Get request to ECS
@@ -138,7 +159,7 @@ func (e *MgmtClient) GetQueryBase(scheme, port, uri, vdc string) (resp *http.Res
 
 // PostQuery sends Post request to ECS
 func (e *MgmtClient) PostQuery(uri string, body io.Reader, bodyLength int64, headers http.Header, vdc string) (*http.Response, error) {
-	return e.PostQueryBase("https", "4443", uri, body, bodyLength, headers, vdc)
+	return e.PostQueryBase("https", "", uri, body, bodyLength, headers, vdc)
 }
 
 // PostQueryBase sends Get request to ECS
