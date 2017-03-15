@@ -24,14 +24,11 @@ func GetEcsFromConfig(customer string, config config.Config) *ecs.Ecs {
 // GetClusterConfig ...
 func GetClusterConfig(customer string, config config.Config) *ClusterConfig {
 	Vdcs := make(map[string]*Vdc)
-	for vname, vdc := range config.Customers[customer].VDCs {
-		nodes := make(map[string]*Node)
-		for _, n := range vdc.Nodes {
-			nodes[n.IP] = &Node{IP: n.IP}
-		}
+	for vname := range config.Customers[customer].VDCs {
 		Vdcs[vname] = &Vdc{
 			ConfigName: vname,
-			NodeInfo:   nodes,
+			// content of NodeInfo will be filled by Refresh()
+			NodeInfo: make(map[string]*Node),
 		}
 	}
 	return &ClusterConfig{customer, config.Customers[customer].CfgRefreshInterval, Vdcs}

@@ -17,12 +17,13 @@ ecsbeat:
       vdcs:
         VDC1:                    # VDC name, could be anything as long as each VDC has different name
            nodes:
-             - ip: 10.1.83.51    # mgmt IP, add IPs of all nodes in this VDC below
-             - ip: 10.1.83.52    # mgmt IP
+             - ip: 10.1.83.51    # host to query. Add mgmt IPs of all nodes in this VDC below,
+                                 # or add site LB IP (and port if not 4443), and set blockduration to 0s if single LB IP is used
+             - ip: 10.1.83.52    # host 
         VDC2:                    # VDC name
            nodes:
-             - ip: 10.1.83.53    # mgmt IP, add IPs of all nodes in this VDC below
-             - ip: 10.1.83.54    # mgmt IP
+             - ip: 10.1.83.53    # host
+             - ip: 10.1.83.54    # host 
       cfgrefreshinterval: 3600s  # How frequent to update VDC and node names. Generally, default value is good enough because these info is almost never changed
 
   # Add additional customer here

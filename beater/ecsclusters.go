@@ -17,7 +17,7 @@ type EcsCluster struct {
 }
 
 // Refresh ...
-func (e *EcsCluster) Refresh() {
+func (e *EcsCluster) Refresh(addnode bool) {
 	for vname, ventry := range e.Config.Vdcs {
 		if vdcResp, err := ecs.GetLocalVDC(e.Client, vname); err == nil {
 			ventry.Update(vname, vdcResp.ID, vdcResp.Name)
@@ -26,7 +26,10 @@ func (e *EcsCluster) Refresh() {
 			for _, n := range nodesResp.Node {
 				if _, ok := ventry.NodeInfo[n.IP]; ok {
 					ventry.NodeInfo[n.IP].Update(n.IP, n.Nodename, n.Version)
+				} else if addnode {
+					ventry.NodeInfo[n.IP] = &Node{IP: n.IP, Name: n.Nodename, Version: n.Version}
 				}
+
 			}
 		}
 		// TODO log error
@@ -74,9 +77,9 @@ func NewEcsClusters(config config.Config) *EcsClusters {
 }
 
 // Refresh ...
-func (ec *EcsClusters) Refresh() {
+func (ec *EcsClusters) Refresh(addnode bool) {
 	for _, cluster := range ec.EcsSlice {
-		cluster.Refresh()
+		cluster.Refresh(addnode)
 	}
 }
 
@@ -95,7 +98,7 @@ func StartRefreshConfig(ec *EcsClusters, done <-chan struct{}) {
 					case <-done:
 						return
 					case <-t.C:
-						e.Refresh()
+						e.Refresh(false)
 					}
 				}
 
