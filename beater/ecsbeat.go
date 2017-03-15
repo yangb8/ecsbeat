@@ -40,7 +40,7 @@ func New(b *beat.Beat, cfg *common.Config) (beat.Beater, error) {
 	bt.ecsClusters.Refresh()
 
 	for _, c := range ec.Cmds {
-		w := NewWorker(c, bt.ecsClusters, config.Period)
+		w := NewWorker(c, bt.ecsClusters)
 		bt.workers = append(bt.workers, w)
 	}
 

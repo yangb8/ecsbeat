@@ -199,7 +199,7 @@ func GenerateEvents(cmd *Command, config *ClusterConfig, client *ecs.MgmtClient)
 			for _, node := range vdc.NodeInfo {
 				var resp *http.Response
 				var err error
-				if cmd.Type == "disks" {
+				if cmd.Type == "disks" || cmd.Type == "processes" {
 					resp, err = client.GetQuery(fmt.Sprintf(cmd.URI, node.IP), vname)
 				} else {
 					resp, err = client.GetQueryBase("http", "9101", cmd.URI, vname)
