@@ -50,6 +50,10 @@ ecsbeat:
       type: alert
       level: vdc
       interval: 5s
+    - uri: /vdc/alerts/latest.json
+      type: latestalert
+      level: vdc
+      interval: 5s
     - uri: /dashboard/zones/localzone?dataType=current
       type: localzone
       level: vdc
