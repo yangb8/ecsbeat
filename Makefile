@@ -19,9 +19,6 @@ setup: copy-vendor
 # Copy beats into vendor directory
 .PHONY: copy-vendor
 copy-vendor:
-	#mkdir -p vendor/github.com/elastic/
-	#cp -R ${GOPATH}/src/github.com/elastic/beats vendor/github.com/elastic/
-	#rm -rf vendor/github.com/elastic/beats/.git
 	glide install
 
 .PHONY: git-init
