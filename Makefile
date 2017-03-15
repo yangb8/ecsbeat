@@ -43,3 +43,9 @@ before-build:
 # Collects all dependencies and then calls update
 .PHONY: collect
 collect:
+
+.PHONY: docker-image
+docker-image:
+	go get github.com/mitchellh/gox
+	gox -osarch="linux/amd64"
+	docker build . -t ecsbeat
