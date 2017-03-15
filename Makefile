@@ -14,7 +14,7 @@ NOTICE_FILE=NOTICE
 .PHONY: setup
 setup: copy-vendor
 	make update
-	cp ecsbeat.yml.bak ecsbeat.yml
+	cp ecsbeat.yml.target ecsbeat.yml
 
 # Copy beats into vendor directory
 .PHONY: copy-vendor

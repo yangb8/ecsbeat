@@ -112,6 +112,7 @@ For further development, check out the [beat developer guide](https://www.elasti
 ## Docker
 
 after build is done
+
 ```make docker-image```
 
 
