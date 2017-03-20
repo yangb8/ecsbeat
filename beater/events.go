@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/elastic/beats/libbeat/common"
 	"github.com/yangb8/ecsbeat/ecs"
@@ -122,6 +123,9 @@ func transformEvent(event map[string]interface{}) {
 }
 
 func addCommonFields(event map[string]interface{}, config *ClusterConfig, vdc, node, etype string) {
+	event["@version"] = "1.0"
+	event["@timestamp"] = common.Time(time.Now())
+	event["type"] = "ecsbeat"
 	event["ecs-customer"] = config.CustomerName
 	event["ecs-event-type"] = etype
 	if v, ok := config.Vdcs[vdc]; ok {
