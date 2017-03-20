@@ -3,7 +3,7 @@
 ############################# Ecsbeat ######################################
 ecsbeat:
   # Defines how often an event is sent to the output
-  # Can use commanad level interval to overwrite it
+  # Can use command level interval to overwrite it
   period: 60s
 
   # Customer ECS Setup
@@ -13,17 +13,16 @@ ecsbeat:
       password: ChangeMe         # mgmt password
       tokenexpiry: 3500s         # token valid period. shall set this timer a little smaller than ECS token valid period
       reqtimeout: 30s            # request timeout
-      blockduration: 600s        # how long a node shall be put into blacklist if request to this node times out. 0s for not blocking
+      blockduration: 600s        # how long a node shall stay in blacklist if request to this node times out. 0s for not blocking
       vdcs:
         VDC1:                    # VDC name, could be anything as long as each VDC has different name
            nodes:
-             - ip: 10.1.83.51    # host to query. Add mgmt IPs of all nodes in this VDC below,
-                                 # or add site LB IP (and port if not 4443), and set blockduration to 0s if single LB IP is used
-             - ip: 10.1.83.52    # host 
+             - host: 10.1.83.51  # host to query. Add mgmt IPs of all nodes in this VDC below, or site LB host (and port if not 4443, set blockduration to 0s if single LB host is used)
+             - host: 10.1.83.52  # host
         VDC2:                    # VDC name
            nodes:
-             - ip: 10.1.83.53    # host
-             - ip: 10.1.83.54    # host 
+             - host: 10.1.83.53  # host
+             - host: 10.1.83.54  # host
       cfgrefreshinterval: 3600s  # How frequent to update VDC and node names. Generally, default value is good enough because these info is almost never changed
 
   # Add additional customer here
@@ -36,12 +35,12 @@ ecsbeat:
   #   vdcs:
   #     EAST:
   #        nodes:
-  #          - ip: 10.1.83.51
-  #          - ip: 10.1.83.52
+  #          - host: 10.1.83.51
+  #          - host: 10.1.83.52
   #     WEST:
   #        nodes:
-  #          - ip: 10.1.83.53
-  #          - ip: 10.1.83.54
+  #          - host: 10.1.83.53
+  #          - host: 10.1.83.54
   #   cfgrefreshinterval: 3600s
 
 #================================ Ecs Cluster  =====================================
@@ -50,11 +49,11 @@ ecsbeat:
     - uri: /vdc/alerts.json
       type: alert
       level: vdc
-      interval: 5s
+      interval: 30s
     - uri: /vdc/alerts/latest.json
       type: latestalert
       level: vdc
-      interval: 5s
+      interval: 30s
     - uri: /dashboard/zones/localzone?dataType=current
       type: localzone
       level: vdc

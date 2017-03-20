@@ -22,7 +22,7 @@ type Config struct {
 		CfgRefreshInterval time.Duration `config:"cfgrefreshinterval"`
 		VDCs               map[string]*struct {
 			Nodes []*struct {
-				IP string `config:"ip"`
+				IP string `config:"host"`
 			} `config:"nodes"`
 		} `config:"vdcs"`
 	} `config:"customers"`
