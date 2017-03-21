@@ -28,7 +28,9 @@ func DecodeResponse(resp *http.Response) ([]map[string]interface{}, error) {
 	if embedded, ok := m["_embedded"]; ok {
 		return DecodeResponseForEmbeddedInstances(embedded)
 	} else if alert, ok := m["alert"]; ok {
-		return DecodeResponseForAlert(alert)
+		return DecodeResponseForAlertEvent(alert)
+	} else if auditevent, ok := m["auditevent"]; ok {
+		return DecodeResponseForAlertEvent(auditevent)
 	} else if nsbilling, ok := m["namespace_billing_infos"]; ok {
 		return DecodeResponseForNsBilling(nsbilling)
 	}
@@ -58,8 +60,8 @@ func DecodeResponseForEmbeddedInstances(embedded interface{}) ([]map[string]inte
 	return result, nil
 }
 
-// DecodeResponseForAlert ...
-func DecodeResponseForAlert(alerts interface{}) ([]map[string]interface{}, error) {
+// DecodeResponseForAlertEvent ...
+func DecodeResponseForAlertEvent(alerts interface{}) ([]map[string]interface{}, error) {
 	alertSlice, ok := alerts.([]interface{})
 	if !ok {
 		return nil, ErrInvalidResponseContent
@@ -181,8 +183,13 @@ func GenerateEvents(cmd *Command, config *ClusterConfig, client *ecs.MgmtClient)
 			break
 		}
 	case "vdc":
+		uri := cmd.URI
+		if strings.Contains(uri, "start_time=%s") {
+			// time format: 2006-01-02T15:04
+			uri = fmt.Sprintf(uri, time.Now().Add(-cmd.Interval).Format(time.RFC3339)[:16])
+		}
 		for vname, vdc := range config.Vdcs {
-			resp, err := client.GetQuery(cmd.URI, vname)
+			resp, err := client.GetQuery(uri, vname)
 			if err != nil {
 				return nil, err
 			}
