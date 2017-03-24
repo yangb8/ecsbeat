@@ -2,7 +2,7 @@
 
 ############################# Ecsbeat ######################################
 ecsbeat:
-  # Defines how often an event is sent to the output
+  # Defines how often an event is fetched from ecs and sent to the output
   # Can use command level interval to overwrite it
   period: 60s
 
@@ -86,10 +86,14 @@ ecsbeat:
       type: capacity
       level: system
       interval: 0
-    - uri: /object/billing/namespace/info.json
+    - uri: /object/billing/namespace/info.json?include_bucket_detail=false
       type: nsbilling
       level: system
       interval: 0
+    - uri: /object/billing/namespace/sample.json?include_bucket_detail=false
+      type: nsbillingsample
+      level: system
+      interval: 300s # must be multiple of 300s
       #- uri: /diagnostic/DumpOwnershipInfo/
       #type: dtinfo
       #level: node

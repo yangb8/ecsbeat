@@ -17,8 +17,6 @@ var ErrInvalidResponseContent = fmt.Errorf("invalid response content")
 
 // DecodeResponse ...
 func DecodeResponse(resp *http.Response) ([]map[string]interface{}, error) {
-	defer resp.Body.Close()
-
 	var m map[string]interface{}
 	err := json.NewDecoder(resp.Body).Decode(&m)
 	if err != nil {
@@ -33,6 +31,8 @@ func DecodeResponse(resp *http.Response) ([]map[string]interface{}, error) {
 		return DecodeResponseForAlertEvent(auditevent)
 	} else if nsbilling, ok := m["namespace_billing_infos"]; ok {
 		return DecodeResponseForNsBilling(nsbilling)
+	} else if nsbillingsample, ok := m["namespace_billing_sample_infos"]; ok {
+		return DecodeResponseForNsBilling(nsbillingsample)
 	}
 	return []map[string]interface{}{m}, nil
 }
@@ -146,7 +146,7 @@ func GenerateEvents(cmd *Command, config *ClusterConfig, client *ecs.MgmtClient)
 		for vname := range config.Vdcs {
 			var resp *http.Response
 			var err error
-			if cmd.Type == "nsbilling" {
+			if cmd.Type == "nsbilling" || cmd.Type == "nsbillingsample" {
 				ids, err := ecs.GetNamespaceIDs(client, vname)
 				if err != nil {
 					return nil, err
@@ -162,7 +162,16 @@ func GenerateEvents(cmd *Command, config *ClusterConfig, client *ecs.MgmtClient)
 				json.NewEncoder(body).Encode(nsList)
 				headers := http.Header{}
 				headers.Set("Content-Type", "application/json")
-				resp, err = client.PostQuery(cmd.URI, body, 0, headers, vname)
+				uri := cmd.URI
+				if cmd.Type == "nsbillingsample" {
+					// -5 mins to make sure the round time won't be in the future
+					// cmd.Interval must be multiple of 5 mins
+					t := time.Now().Add(-5 * time.Minute).Round(5 * time.Minute)
+					uri += fmt.Sprintf("&start_time=%s&end_time=%s",
+						t.Add(-cmd.Interval).Format(time.RFC3339)[:16],
+						t.Format(time.RFC3339)[:16])
+				}
+				resp, err = client.PostQuery(uri, body, 0, headers, vname)
 			} else {
 				resp, err = client.GetQuery(cmd.URI, vname)
 			}

@@ -2,6 +2,7 @@ package ecs
 
 import (
 	"errors"
+	"math/rand"
 	"sync"
 	"time"
 )
@@ -27,24 +28,25 @@ func NewVdc(id string, nodes []string) *Vdc {
 // Vdc ...
 type Vdc struct {
 	sync.Mutex
-	ID      string
-	Nodes   []node
-	current int
+	ID    string
+	Nodes []node
 }
 
 // NextAvailableNode ...
 func (v *Vdc) NextAvailableNode() (string, error) {
 	v.Lock()
-	defer v.Unlock()
 	now := time.Now()
-	for i := 0; i < len(v.Nodes); i++ {
-
-		v.current = (v.current + 1) % len(v.Nodes)
-		if now.After(v.Nodes[v.current].blockedUntil) {
-			return v.Nodes[v.current].host, nil
+	candidates := make([]node, 0)
+	for _, n := range v.Nodes {
+		if now.After(n.blockedUntil) {
+			candidates = append(candidates, n)
 		}
 	}
-	return "", ErrNoNodeAvailable
+	v.Unlock()
+	if len(candidates) == 0 {
+		return "", ErrNoNodeAvailable
+	}
+	return candidates[rand.Intn(len(candidates))].host, nil
 }
 
 // BlockNode is to block node in prefined duration
@@ -74,9 +76,10 @@ type Ecs struct {
 func (e *Ecs) NextAvailableNode(vdcid string) (string, error) {
 	if v, ok := e.Vdcs[vdcid]; ok {
 		return v.NextAvailableNode()
-	} else {
-		for _, vdc := range e.Vdcs {
-			return vdc.NextAvailableNode()
+	}
+	for _, vdc := range e.Vdcs {
+		if host, err := vdc.NextAvailableNode(); err == nil {
+			return host, err
 		}
 	}
 	return "", ErrNoNodeAvailable
