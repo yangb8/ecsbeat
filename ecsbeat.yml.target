@@ -46,10 +46,10 @@ ecsbeat:
 #================================ Ecs Cluster  =====================================
 #ecsconfig:
   commands: ## DON'T change commands section ##
-    - uri: /vdc/events.json?start_time=%s
+    - uri: /vdc/events.json
       type: auditevent
       level: vdc
-      interval: 30s
+      interval: 60s # must be multiple of 60s
     - uri: /vdc/alerts.json
       type: alert
       level: vdc

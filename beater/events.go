@@ -193,9 +193,11 @@ func GenerateEvents(cmd *Command, config *ClusterConfig, client *ecs.MgmtClient)
 		}
 	case "vdc":
 		uri := cmd.URI
-		if strings.Contains(uri, "start_time=%s") {
-			// time format: 2006-01-02T15:04
-			uri = fmt.Sprintf(uri, time.Now().Add(-cmd.Interval).Format(time.RFC3339)[:16])
+		if cmd.Type == "auditevent" {
+			t := time.Now().Add(-1 * time.Minute).Round(1 * time.Minute)
+			uri += fmt.Sprintf("?start_time=%s&end_time=%s",
+				t.Add(-cmd.Interval).Format(time.RFC3339)[:16],
+				t.Format(time.RFC3339)[:16])
 		}
 		for vname, vdc := range config.Vdcs {
 			resp, err := client.GetQuery(uri, vname)
