@@ -138,6 +138,29 @@ func addCommonFields(event map[string]interface{}, config *ClusterConfig, vdc, n
 	}
 }
 
+func getFilledURI(cmd *Command, ip string) string {
+	switch cmd.Type {
+	case "nsbillingsample":
+		// -5 mins to make sure the round time won't be in the future
+		// cmd.Interval must be multiple of 5 mins
+		t := time.Now().Add(-5 * time.Minute).Round(5 * time.Minute)
+		return cmd.URI + fmt.Sprintf("&start_time=%s&end_time=%s",
+			t.Add(-cmd.Interval).Format(time.RFC3339)[:16],
+			t.Format(time.RFC3339)[:16])
+	case "auditevent":
+		t := time.Now().Add(-1 * time.Minute).Round(1 * time.Minute)
+		return cmd.URI + fmt.Sprintf("?start_time=%s&end_time=%s",
+			t.Add(-cmd.Interval).Format(time.RFC3339)[:16],
+			t.Format(time.RFC3339)[:16])
+	case "disks":
+		fallthrough
+	case "processes":
+		return fmt.Sprintf(cmd.URI, ip)
+	default:
+		return cmd.URI
+	}
+}
+
 // GenerateEvents ...
 func GenerateEvents(cmd *Command, config *ClusterConfig, client *ecs.MgmtClient) ([]common.MapStr, error) {
 	events := make([]common.MapStr, 0)
@@ -162,18 +185,9 @@ func GenerateEvents(cmd *Command, config *ClusterConfig, client *ecs.MgmtClient)
 				json.NewEncoder(body).Encode(nsList)
 				headers := http.Header{}
 				headers.Set("Content-Type", "application/json")
-				uri := cmd.URI
-				if cmd.Type == "nsbillingsample" {
-					// -5 mins to make sure the round time won't be in the future
-					// cmd.Interval must be multiple of 5 mins
-					t := time.Now().Add(-5 * time.Minute).Round(5 * time.Minute)
-					uri += fmt.Sprintf("&start_time=%s&end_time=%s",
-						t.Add(-cmd.Interval).Format(time.RFC3339)[:16],
-						t.Format(time.RFC3339)[:16])
-				}
-				resp, err = client.PostQuery(uri, body, 0, headers, vname)
+				resp, err = client.PostQuery(getFilledURI(cmd, ""), body, 0, headers, vname)
 			} else {
-				resp, err = client.GetQuery(cmd.URI, vname)
+				resp, err = client.GetQuery(getFilledURI(cmd, ""), vname)
 			}
 			if err != nil {
 				return nil, err
@@ -192,15 +206,8 @@ func GenerateEvents(cmd *Command, config *ClusterConfig, client *ecs.MgmtClient)
 			break
 		}
 	case "vdc":
-		uri := cmd.URI
-		if cmd.Type == "auditevent" {
-			t := time.Now().Add(-1 * time.Minute).Round(1 * time.Minute)
-			uri += fmt.Sprintf("?start_time=%s&end_time=%s",
-				t.Add(-cmd.Interval).Format(time.RFC3339)[:16],
-				t.Format(time.RFC3339)[:16])
-		}
 		for vname, vdc := range config.Vdcs {
-			resp, err := client.GetQuery(uri, vname)
+			resp, err := client.GetQuery(getFilledURI(cmd, ""), vname)
 			if err != nil {
 				return nil, err
 			}
@@ -221,10 +228,10 @@ func GenerateEvents(cmd *Command, config *ClusterConfig, client *ecs.MgmtClient)
 			for _, node := range vdc.NodeInfo {
 				var resp *http.Response
 				var err error
-				if cmd.Type == "disks" || cmd.Type == "processes" {
-					resp, err = client.GetQuery(fmt.Sprintf(cmd.URI, node.IP), vname)
+				if cmd.Type == "dtinfo" {
+					resp, err = client.GetQueryBase("http", "9101", getFilledURI(cmd, ""), vname)
 				} else {
-					resp, err = client.GetQueryBase("http", "9101", cmd.URI, vname)
+					resp, err = client.GetQuery(getFilledURI(cmd, node.IP), vname)
 				}
 				if err != nil {
 					return nil, err
