@@ -3,6 +3,7 @@ package ecs
 import (
 	"bufio"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"net/http"
@@ -102,16 +103,17 @@ func GetStoragePool(client *MgmtClient, vdc string) (*StoragePool, error) {
 
 // DtEntry ...
 type DtEntry struct {
-	DtID      string
-	DtCreated string
-	//	DtDown         int
-	DtLevel   string
-	DtOwnerIP string
-	//	DtReady        int
-	DtPartition    string
-	DtPartitionLvl string
-	//	DtStatus       string
-	DtType string
+	DtID        string `json:"dt-id"`
+	DtCreated   string `json:"dt-created"`
+	DtError     string `json:"dt-error"`
+	DtDown      int    `json:"dt-down"`
+	DtLevel     string `json:"dt-level"`
+	DtOwnerIP   string `json:"dt-owner-ip"`
+	DtReady     int    `json:"dt-ready"`
+	DtPartition string `json:"dt-partition"`
+	DtStatus    string `json:"dt-status"`
+	DtType      string `json:"dt-type"`
+	DtTypeLvl   string `json:"dt-type-level"`
 }
 
 // DtInfos ...
@@ -120,13 +122,19 @@ type DtInfos struct {
 }
 
 // GetDtInfos ...
-func GetDtInfos(client *MgmtClient, vdc string) (*DtInfos, error) {
-	resp, err := client.GetQueryBase("http", "9101", "/diagnostic/DumpOwnershipInfo/", vdc)
+func GetDtInfos(mc *MgmtClient, host string) (*DtInfos, error) {
+	req, err := http.NewRequest("GET", "http://"+host+":9101/diagnostic/DumpOwnershipInfo/", nil)
 	if err != nil {
 		return nil, err
 	}
+	resp, err := mc.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("Status Code %d", resp.StatusCode)
+	}
 	defer resp.Body.Close()
-
 	result := DtInfos{}
 	reader := bufio.NewReader(resp.Body)
 	var line string
@@ -156,12 +164,15 @@ func parseDtInfoStr(s string) *DtEntry {
 		part = strings.TrimSpace(part)
 		part = strings.TrimLeft(part, "[")
 		part = strings.TrimRight(part, "]")
+		part = strings.TrimSpace(part)
 		kvPair := strings.SplitN(part, ":", 2)
 		if len(kvPair) == 2 {
 			key, value := strings.TrimSpace(kvPair[0]), strings.TrimSpace(kvPair[1])
 			switch key {
 			case "id":
 				value = strings.TrimRight(value, ":")
+				tmp := strings.Split(value, ":")
+				value = tmp[len(tmp)-1]
 				if len(value) == 0 {
 					return nil
 				}
@@ -180,12 +191,75 @@ func parseDtInfoStr(s string) *DtEntry {
 			}
 		}
 	}
-	//	result.DtDown = 0
-	//	result.DtReady = 1
-	//	result.DtStatus = "ready"
+	result.DtDown = 0
+	result.DtReady = 1
+	result.DtStatus = "ready"
 	parseDtID(&result, result.DtID)
 
 	return &result
+}
+
+// DtInitsXML ...
+type DtInitsXML struct {
+	Entries []struct {
+		Items []struct {
+			XMLName xml.Name
+			Content string `xml:",innerxml"`
+		} `xml:",any"`
+	} `xml:"entry"`
+}
+
+// GetDtInits ...
+func GetDtInits(mc *MgmtClient, host string) (*DtInfos, error) {
+	req, err := http.NewRequest("GET", "http://"+host+":9101/stats/dt/DTInitStat/", nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := mc.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("Status Code %d", resp.StatusCode)
+	}
+	dtXML := DtInitsXML{}
+	err = xml.NewDecoder(resp.Body).Decode(&dtXML)
+	resp.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	result := DtInfos{}
+	for _, entry := range dtXML.Entries {
+		for _, item := range entry.Items {
+			if item.XMLName.Local == "type" || item.XMLName.Local == "level" || item.XMLName.Local == "total_dt_num" ||
+				item.XMLName.Local == "unready_dt_num" || item.XMLName.Local == "unknown_dt_num" {
+				continue
+			}
+			if strings.Contains(item.Content, "urn:") {
+				IdsStr := strings.TrimSpace(item.Content)
+				IdsStr = strings.TrimLeft(IdsStr, "[")
+				IdsStr = strings.TrimRight(IdsStr, "]")
+				IdsStr = strings.TrimSpace(IdsStr)
+				for _, id := range strings.Split(IdsStr, ",") {
+					id = strings.TrimRight(id, ":")
+					tmp := strings.Split(id, ":")
+					id = tmp[len(tmp)-1]
+					dt := DtEntry{
+						DtID:    id,
+						DtError: item.XMLName.Local,
+					}
+					if strings.Contains(item.XMLName.Local, "ERROR_RPC_CLIENT_NO_RESPONSE") {
+						dt.DtStatus, dt.DtReady, dt.DtDown = "unknown", 0, 0
+					} else {
+						dt.DtStatus, dt.DtReady, dt.DtDown = "unready", 0, 1
+					}
+					result.DtEntries = append(result.DtEntries, dt)
+				}
+			}
+		}
+	}
+	return &result, nil
 }
 
 func parseDtID(d *DtEntry, dtid string) {
@@ -198,7 +272,7 @@ func parseDtID(d *DtEntry, dtid string) {
 	}
 	if len(parts) >= 6 {
 		d.DtLevel = parts[5]
-		d.DtPartitionLvl = d.DtType + "_" + d.DtLevel
+		d.DtTypeLvl = d.DtType + "_" + d.DtLevel
 	}
 }
 
