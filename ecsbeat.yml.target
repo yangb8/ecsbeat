@@ -4,7 +4,7 @@
 ecsbeat:
   # Defines how often an event is fetched from ecs and sent to the output
   # Can use command level interval to overwrite it
-  period: 60s
+  period: 300s
 
   # Customer ECS Setup
   customers:
@@ -45,7 +45,7 @@ ecsbeat:
 
 #================================ Ecs Cluster  =====================================
 #ecsconfig:
-  commands: ## DON'T change commands section ##
+  commands: ## DON'T change commands section except for interval ##
     - uri: /vdc/events.json
       type: auditevent
       level: vdc
@@ -53,11 +53,11 @@ ecsbeat:
     - uri: /vdc/alerts.json
       type: alert
       level: vdc
-      interval: 30s
+      interval: 60s
     - uri: /vdc/alerts/latest.json
       type: latestalert
       level: vdc
-      interval: 30s
+      interval: 60s
     - uri: /dashboard/zones/localzone?dataType=current
       type: localzone
       level: vdc
@@ -89,15 +89,15 @@ ecsbeat:
     - uri: /object/billing/namespace/info.json?include_bucket_detail=false
       type: nsbilling
       level: system
-      interval: 0
+      interval: 600s
     - uri: /object/billing/namespace/sample.json?include_bucket_detail=false
       type: nsbillingsample
       level: system
-      interval: 300s # must be multiple of 300s
-      #- uri: /diagnostic/DumpOwnershipInfo/
-      #type: dtinfo
-      #level: node
-  
+      interval: 600s # must be multiple of 300s
+    - uri: dummy
+      type: dtinfo
+      level: dtinfo # dtinfo is specially handled
+      interval: 3600s
 
 #================================ General =====================================
 

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
 	"time"
 
@@ -226,17 +227,10 @@ func GenerateEvents(cmd *Command, config *ClusterConfig, client *ecs.MgmtClient)
 	case "node":
 		for vname, vdc := range config.Vdcs {
 			for _, node := range vdc.NodeInfo {
-				var resp *http.Response
-				var err error
-				if cmd.Type == "dtinfo" {
-					resp, err = client.GetQueryBase("http", "9101", getFilledURI(cmd, ""), vname)
-				} else {
-					resp, err = client.GetQuery(getFilledURI(cmd, node.IP), vname)
-				}
+				resp, err := client.GetQuery(getFilledURI(cmd, node.IP), vname)
 				if err != nil {
 					return nil, err
 				}
-
 				decoded, err := DecodeResponse(resp)
 				resp.Body.Close()
 				if err != nil {
@@ -249,7 +243,71 @@ func GenerateEvents(cmd *Command, config *ClusterConfig, client *ecs.MgmtClient)
 				}
 			}
 		}
+	case "dtinfo":
+		if cmd.Type == "dtinfo" {
+			// try each ip until we got 2 responses w/o errors
+			var fetched bool
+			for _, vdc := range config.Vdcs {
+				if fetched {
+					break
+				}
+				for _, node := range vdc.NodeInfo {
+					if fetched {
+						break
+					}
+					dtInfos, err := ecs.GetDtInfos(client, node.IP)
+					if err != nil {
+						// try next node
+						continue
+					}
+					dtInits, err := ecs.GetDtInits(client, node.IP)
+					if err != nil {
+						// try next node
+						continue
+					}
+					fetched = true
+					for _, entry := range dtInfos.DtEntries {
+						for _, bad := range dtInits.DtEntries {
+							if bad.DtID == entry.DtID {
+								entry.DtError, entry.DtStatus, entry.DtReady, entry.DtDown = bad.DtError, bad.DtStatus, bad.DtReady, bad.DtDown
+								break
+							}
+						}
+						d := struct2Map(entry)
+						transformEvent(d)
+						addCommonFields(d, config, vdc.ConfigName, node.IP, cmd.Type)
+						events = append(events, common.MapStr(d))
+					}
+				}
+			}
+		}
 	}
 
 	return events, nil
+}
+
+func struct2Map(obj interface{}) map[string]interface{} {
+	typ := reflect.TypeOf(obj)
+	val := reflect.ValueOf(obj)
+
+	if typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+		val = val.Elem()
+	}
+
+	result := make(map[string]interface{})
+	if typ.Kind() != reflect.Struct {
+		return result
+	}
+
+	for i := 0; i < typ.NumField(); i++ {
+		field := typ.Field(i)
+		if field.Anonymous {
+			continue
+		}
+		if name := field.Tag.Get("json"); name != "" {
+			result[name] = val.Field(i).Interface()
+		}
+	}
+	return result
 }
