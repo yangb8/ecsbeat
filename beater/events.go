@@ -163,8 +163,9 @@ func getFilledURI(cmd *Command, ip string) string {
 }
 
 // GenerateEvents ...
-func GenerateEvents(cmd *Command, config *ClusterConfig, client *ecs.MgmtClient) ([]common.MapStr, error) {
-	events := make([]common.MapStr, 0)
+func GenerateEvents(cmd *Command, config *ClusterConfig, client *ecs.MgmtClient,
+	done <-chan struct{}, out chan<- common.MapStr) (bool, error) {
+
 	switch cmd.Level {
 	case "system":
 		for vname := range config.Vdcs {
@@ -173,7 +174,7 @@ func GenerateEvents(cmd *Command, config *ClusterConfig, client *ecs.MgmtClient)
 			if cmd.Type == "nsbilling" || cmd.Type == "nsbillingsample" {
 				ids, err := ecs.GetNamespaceIDs(client, vname)
 				if err != nil {
-					return nil, err
+					return true, err
 				}
 				nsList := struct {
 					ID []string `json:"id"`
@@ -191,21 +192,23 @@ func GenerateEvents(cmd *Command, config *ClusterConfig, client *ecs.MgmtClient)
 				resp, err = client.GetQuery(getFilledURI(cmd, ""), vname)
 			}
 			if err != nil {
-				return nil, err
+				return true, err
 			}
 			// sometimes, ECS returns nil response for nsbillingsample
 			if resp == nil {
-				return nil, ErrInvalidResponseContent
+				return true, ErrInvalidResponseContent
 			}
 			decoded, err := DecodeResponse(resp)
 			resp.Body.Close()
 			if err != nil {
-				return nil, err
+				return true, err
 			}
 			for _, d := range decoded {
 				transformEvent(d)
 				addCommonFields(d, config, "", "", cmd.Type)
-				events = append(events, common.MapStr(d))
+				if !writeEvent(done, out, common.MapStr(d)) {
+					return false, nil
+				}
 			}
 			break
 		}
@@ -213,18 +216,20 @@ func GenerateEvents(cmd *Command, config *ClusterConfig, client *ecs.MgmtClient)
 		for vname, vdc := range config.Vdcs {
 			resp, err := client.GetQuery(getFilledURI(cmd, ""), vname)
 			if err != nil {
-				return nil, err
+				return true, err
 			}
 
 			decoded, err := DecodeResponse(resp)
 			resp.Body.Close()
 			if err != nil {
-				return nil, err
+				return true, err
 			}
 			for _, d := range decoded {
 				transformEvent(d)
 				addCommonFields(d, config, vdc.ConfigName, "", cmd.Type)
-				events = append(events, common.MapStr(d))
+				if !writeEvent(done, out, common.MapStr(d)) {
+					return false, nil
+				}
 			}
 		}
 	case "node":
@@ -232,17 +237,19 @@ func GenerateEvents(cmd *Command, config *ClusterConfig, client *ecs.MgmtClient)
 			for _, node := range vdc.NodeInfo {
 				resp, err := client.GetQuery(getFilledURI(cmd, node.IP), vname)
 				if err != nil {
-					return nil, err
+					return true, err
 				}
 				decoded, err := DecodeResponse(resp)
 				resp.Body.Close()
 				if err != nil {
-					return nil, err
+					return true, err
 				}
 				for _, d := range decoded {
 					transformEvent(d)
 					addCommonFields(d, config, vdc.ConfigName, node.IP, cmd.Type)
-					events = append(events, common.MapStr(d))
+					if !writeEvent(done, out, common.MapStr(d)) {
+						return false, nil
+					}
 				}
 			}
 		}
@@ -279,14 +286,16 @@ func GenerateEvents(cmd *Command, config *ClusterConfig, client *ecs.MgmtClient)
 						d := struct2Map(entry)
 						transformEvent(d)
 						addCommonFields(d, config, vdc.ConfigName, node.IP, cmd.Type)
-						events = append(events, common.MapStr(d))
+						if !writeEvent(done, out, common.MapStr(d)) {
+							return false, nil
+						}
 					}
 				}
 			}
 		}
 	}
 
-	return events, nil
+	return true, nil
 }
 
 func struct2Map(obj interface{}) map[string]interface{} {
