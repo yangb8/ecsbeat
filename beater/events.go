@@ -193,7 +193,10 @@ func GenerateEvents(cmd *Command, config *ClusterConfig, client *ecs.MgmtClient)
 			if err != nil {
 				return nil, err
 			}
-
+			// sometimes, ECS returns nil response for nsbillingsample
+			if resp == nil {
+				return nil, ErrInvalidResponseContent
+			}
 			decoded, err := DecodeResponse(resp)
 			resp.Body.Close()
 			if err != nil {
