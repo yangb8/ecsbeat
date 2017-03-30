@@ -76,15 +76,13 @@ func (w *Worker) fetch(done <-chan struct{}, out chan<- common.MapStr) error {
 
 	// TODO, currently, each work for a particular type of query, shall we assign each work to one customer, or even every VDC?
 	for _, ecs := range w.ecsClusters.EcsSlice {
-		events, err := GenerateEvents(w.cmd, ecs.Config, ecs.Client)
+		torun, err := GenerateEvents(w.cmd, ecs.Config, ecs.Client, done, out)
+		if !torun {
+			return nil
+		}
 		if err != nil {
 			logp.Err("%v", err)
 			continue
-		}
-		for _, event := range events {
-			if !writeEvent(done, out, event) {
-				return nil
-			}
 		}
 	}
 	return nil
