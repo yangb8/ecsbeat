@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/elastic/beats/libbeat/common"
+	"github.com/elastic/beats/libbeat/logp"
 	"github.com/yangb8/ecsbeat/ecs"
 )
 
@@ -174,6 +175,7 @@ func GenerateEvents(cmd *Command, config *ClusterConfig, client *ecs.MgmtClient,
 			if cmd.Type == "nsbilling" || cmd.Type == "nsbillingsample" {
 				ids, err := ecs.GetNamespaceIDs(client, vname)
 				if err != nil {
+					logp.Err("%s: %v", cmd.Type, err)
 					return true, err
 				}
 				nsList := struct {
@@ -192,15 +194,18 @@ func GenerateEvents(cmd *Command, config *ClusterConfig, client *ecs.MgmtClient,
 				resp, err = client.GetQuery(getFilledURI(cmd, ""), vname)
 			}
 			if err != nil {
+				logp.Err("%s: %v", cmd.Type, err)
 				return true, err
 			}
 			// sometimes, ECS returns nil response for nsbillingsample
 			if resp == nil {
+				logp.Err("%s: %v", cmd.Type, err)
 				return true, ErrInvalidResponseContent
 			}
 			decoded, err := DecodeResponse(resp)
 			resp.Body.Close()
 			if err != nil {
+				logp.Err("%s: %v", cmd.Type, err)
 				return true, err
 			}
 			for _, d := range decoded {
@@ -216,12 +221,14 @@ func GenerateEvents(cmd *Command, config *ClusterConfig, client *ecs.MgmtClient,
 		for vname, vdc := range config.Vdcs {
 			resp, err := client.GetQuery(getFilledURI(cmd, ""), vname)
 			if err != nil {
+				logp.Err("%s: %v", cmd.Type, err)
 				return true, err
 			}
 
 			decoded, err := DecodeResponse(resp)
 			resp.Body.Close()
 			if err != nil {
+				logp.Err("%s: %v", cmd.Type, err)
 				return true, err
 			}
 			for _, d := range decoded {
@@ -237,11 +244,13 @@ func GenerateEvents(cmd *Command, config *ClusterConfig, client *ecs.MgmtClient,
 			for _, node := range vdc.NodeInfo {
 				resp, err := client.GetQuery(getFilledURI(cmd, node.IP), vname)
 				if err != nil {
+					logp.Err("%s: %v", cmd.Type, err)
 					return true, err
 				}
 				decoded, err := DecodeResponse(resp)
 				resp.Body.Close()
 				if err != nil {
+					logp.Err("%s: %v", cmd.Type, err)
 					return true, err
 				}
 				for _, d := range decoded {

@@ -18,6 +18,13 @@ type Token struct {
 	mutex         *sync.RWMutex
 }
 
+// ForceExpire sets current token expired
+func (t *Token) ForceExpire() {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+	t.createdAt = time.Now().Add(-t.validDuration)
+}
+
 // Expired checks whether token expired
 func (t *Token) Expired() bool {
 	t.mutex.RLock()
