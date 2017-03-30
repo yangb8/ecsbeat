@@ -79,4 +79,7 @@ func (bt *Ecsbeat) Run(b *beat.Beat) error {
 func (bt *Ecsbeat) Stop() {
 	bt.client.Close()
 	close(bt.done)
+	for _, ecs := range bt.ecsClusters.EcsSlice {
+		ecs.Client.Close()
+	}
 }

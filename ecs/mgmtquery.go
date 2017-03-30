@@ -4,12 +4,13 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/elastic/beats/libbeat/logp"
 )
 
 // NewMgmtClient ...
@@ -42,11 +43,6 @@ type MgmtClient struct {
 	client   *http.Client
 }
 
-// PerformRequest sends request to ECS
-func (e *MgmtClient) PerformRequest(method, uri string, body io.Reader, bodyLength int64, headers http.Header, auth Authentication, vdc string) (*http.Response, error) {
-	return e.PerformRequestBase(method, "https", "", uri, body, bodyLength, headers, auth, vdc)
-}
-
 func parseHostPort(s string) (hostname, port string) {
 	pair := strings.Split(s, ":")
 	if len(pair) > 0 {
@@ -58,11 +54,11 @@ func parseHostPort(s string) (hostname, port string) {
 	return
 }
 
-// PerformRequestBase sends request to ECS
-func (e *MgmtClient) PerformRequestBase(method, scheme, port, uri string, body io.Reader, bodyLength int64, headers http.Header, auth Authentication, vdc string) (*http.Response, error) {
+// PerformRequest sends request to ECS
+func (e *MgmtClient) PerformRequest(method, scheme, port, uri string, body io.Reader, bodyLength int64, headers http.Header, auth Authentication, vdc string) (*http.Response, int, error) {
 	h, err := e.ecs.NextAvailableNode(vdc)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	host, pport := parseHostPort(h)
@@ -76,7 +72,7 @@ func (e *MgmtClient) PerformRequestBase(method, scheme, port, uri string, body i
 
 	req, err := http.NewRequest(method, scheme+"://"+host+":"+port+uri, body)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	// Set content length
@@ -88,26 +84,27 @@ func (e *MgmtClient) PerformRequestBase(method, scheme, port, uri string, body i
 			req.Header.Add(k, v)
 		}
 	}
-	log.Printf("[%s] performing request %s %s", e.Name, req.Method, req.URL)
+	logp.Info("[%s] performing request %s %s", e.Name, req.Method, req.URL)
 
 	auth.SetAuth(req)
 
 	resp, err := e.client.Do(req)
 	if err != nil {
-		log.Printf("[%s] error while performing request %s %s: %s", e.Name, req.Method, req.URL, err)
+		logp.Warn("[%s] error while performing request %s %s: %s", e.Name, req.Method, req.URL, err)
 		if err, ok := err.(net.Error); ok && err.Timeout() {
 			e.ecs.BlockNode(host, e.blockDur)
 		}
-		return nil, err
+		return nil, 0, err
 	}
 
 	if resp.StatusCode >= 200 && resp.StatusCode <= 219 {
-		return resp, nil
+		return resp, resp.StatusCode, nil
 	}
 
 	// Close the body on failure response
 	resp.Body.Close()
-	return nil, fmt.Errorf("[%s]: %s %s", e.Name, method, resp.Status)
+	logp.Warn("[%s] error response %s %s %s", e.Name, method, req.URL, resp.Status)
+	return nil, resp.StatusCode, fmt.Errorf("[%s]: %s %s", e.Name, method, resp.Status)
 }
 
 // MgmtLogin to login ECS mgmt interface
@@ -124,7 +121,7 @@ func (e *MgmtClient) MgmtLogin() (err error) {
 	// retry for login
 	i := 0
 	for ; i < 3; i++ {
-		if resp, err = e.PerformRequest("GET", "/login", nil, 0, http.Header{}, &BasicAuth{e.username, e.password}, ""); err != nil {
+		if resp, _, err = e.PerformRequest("GET", "https", "", "/login", nil, 0, http.Header{}, &BasicAuth{e.username, e.password}, ""); err != nil {
 			continue
 		}
 		resp.Body.Close()
@@ -169,30 +166,30 @@ func (e *MgmtClient) PostQueryBase(scheme, port, uri string, body io.Reader, bod
 
 // QueryBaseWithRetry does the general query to ECS with retry
 func (e *MgmtClient) QueryBaseWithRetry(method, scheme, port, uri string, body io.Reader, bodyLength int64, headers http.Header, vdc string) (resp *http.Response, err error) {
+	var status int
 	for i := 0; i < 3; i++ {
-		if resp, err = e.QueryBase(method, scheme, port, uri, body, bodyLength, headers, vdc); err == nil {
+		if e.token == nil || e.token.Expired() {
+			if err = e.MgmtLogin(); err != nil {
+				continue
+			}
+		}
+		token, _ := e.token.Get()
+		if resp, status, err = e.PerformRequest(method, scheme, port, uri, body, bodyLength, headers, &TokenAuth{token}, vdc); err != nil {
+			if status == 401 {
+				e.token.ForceExpire()
+			}
+		} else {
 			return resp, err
 		}
 	}
 	return resp, err
 }
 
-// QueryBase does the general query to ECS
-func (e *MgmtClient) QueryBase(method, scheme, port, uri string, body io.Reader, bodyLength int64, headers http.Header, vdc string) (*http.Response, error) {
-	if e.token == nil || e.token.Expired() {
-		if err := e.MgmtLogin(); err != nil {
-			return nil, err
-		}
-	}
-	token, _ := e.token.Get()
-	return e.PerformRequestBase(method, scheme, port, uri, body, bodyLength, headers, &TokenAuth{token}, vdc)
-}
-
 // MgmtLogout logs out ECS mgmt interface
 func (e *MgmtClient) MgmtLogout(token string) error {
-	resp, err := e.PerformRequest("GET", "/logout", nil, 0, http.Header{}, &TokenAuth{token}, "")
+	resp, _, err := e.PerformRequest("GET", "https", "", "/logout", nil, 0, http.Header{}, &TokenAuth{token}, "")
 	if err != nil {
-		log.Printf("logout failed [%s]", err)
+		logp.Info("logout failed [%s]", err)
 		return err
 	}
 	resp.Body.Close()
