@@ -97,7 +97,7 @@ ecsbeat:
     - uri: dummy
       type: dtinfo
       level: dtinfo # dtinfo is specially handled
-      interval: 3600s
+      interval: 600s
 
 #================================ General =====================================
 
