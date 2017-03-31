@@ -149,6 +149,8 @@ func getFilledURI(cmd *Command, ip string) string {
 		return cmd.URI + fmt.Sprintf("&start_time=%s&end_time=%s",
 			t.Add(-cmd.Interval).Format(time.RFC3339)[:16],
 			t.Format(time.RFC3339)[:16])
+	case "alert":
+		fallthrough
 	case "auditevent":
 		t := time.Now().Add(-1 * time.Minute).Round(1 * time.Minute)
 		return cmd.URI + fmt.Sprintf("?start_time=%s&end_time=%s",

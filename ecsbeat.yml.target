@@ -53,7 +53,7 @@ ecsbeat:
     - uri: /vdc/alerts.json
       type: alert
       level: vdc
-      interval: 60s
+      interval: 60s # must be multiple of 60s
     - uri: /vdc/alerts/latest.json
       type: latestalert
       level: vdc
