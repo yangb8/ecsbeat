@@ -131,10 +131,10 @@ func GetDtInfos(mc *MgmtClient, host string) (*DtInfos, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return nil, fmt.Errorf("Status Code %d", resp.StatusCode)
 	}
-	defer resp.Body.Close()
 	result := DtInfos{}
 	reader := bufio.NewReader(resp.Body)
 	var line string
@@ -219,12 +219,12 @@ func GetDtInits(mc *MgmtClient, host string) (*DtInfos, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return nil, fmt.Errorf("Status Code %d", resp.StatusCode)
 	}
 	dtXML := DtInitsXML{}
 	err = xml.NewDecoder(resp.Body).Decode(&dtXML)
-	resp.Body.Close()
 	if err != nil {
 		return nil, err
 	}
