@@ -8,40 +8,24 @@ ecsbeat:
 
   # Customer ECS Setup
   customers:
-    EMC:                         # customer name
+    - customername: EMC          # customer name
       username: root             # mgmt username
       password: ChangeMe         # mgmt password
       tokenexpiry: 3500s         # token valid period. shall set this timer a little smaller than ECS token valid period
       reqtimeout: 30s            # request timeout
-      blockduration: 600s        # how long a node shall stay in blacklist if request to this node times out. 0s for not blocking
-      vdcs:
-        VDC1:                    # VDC name, could be anything as long as each VDC has different name
-           nodes:
-             - host: 10.1.83.51  # host to query. Add mgmt IPs of all nodes in this VDC below, or site LB host (and port if not 4443, set blockduration to 0s if single LB host is used)
-             - host: 10.1.83.52  # host
-        VDC2:                    # VDC name
-           nodes:
-             - host: 10.1.83.53  # host
-             - host: 10.1.83.54  # host
+      blockduration: 180s        # how long a node shall stay in blacklist if request to this node times out. 0s for not blocking
       cfgrefreshinterval: 3600s  # How frequent to update VDC and node names. Generally, default value is good enough because these info is almost never changed
+      vdcs:
+        - vdcname: VDC1          # VDC name, could be anything as long as each VDC has different name
+          nodes:
+            - host: 10.1.83.51   # host to query. Add mgmt IPs of all nodes in this VDC below,or site LB host (and port if not 4443, set blockduration to 0s if single LB host is used)
+            - host: 10.1.83.52   # host
+        - vdcname: VDC2
+          nodes:
+            - host: 10.1.83.53   # host
+            - host: 10.1.83.54   # host
 
   # Add additional customer here
-  # DELL:
-  #   username: root
-  #   password: ChangeMe
-  #   tokenexpiry: 3500s
-  #   reqtimeout: 30s
-  #   blockduration: 600s
-  #   vdcs:
-  #     EAST:
-  #        nodes:
-  #          - host: 10.1.83.51
-  #          - host: 10.1.83.52
-  #     WEST:
-  #        nodes:
-  #          - host: 10.1.83.53
-  #          - host: 10.1.83.54
-  #   cfgrefreshinterval: 3600s
 
 #================================ Ecs Cluster  =====================================
 #ecsconfig:

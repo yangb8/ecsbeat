@@ -9,29 +9,29 @@ import (
 )
 
 // GetEcsFromConfig ...
-func GetEcsFromConfig(customer string, config config.Config) *ecs.Ecs {
+func GetEcsFromConfig(c *config.Customer) *ecs.Ecs {
 	Vdcs := make(map[string]*ecs.Vdc)
-	for vname, vdc := range config.Customers[customer].VDCs {
+	for _, vdc := range c.VDCs {
 		nodes := make([]string, len(vdc.Nodes))
 		for i, n := range vdc.Nodes {
 			nodes[i] = n.IP
 		}
-		Vdcs[vname] = ecs.NewVdc(vname, nodes)
+		Vdcs[vdc.VdcName] = ecs.NewVdc(vdc.VdcName, nodes)
 	}
 	return ecs.NewEcs(Vdcs)
 }
 
 // GetClusterConfig ...
-func GetClusterConfig(customer string, config config.Config) *ClusterConfig {
+func GetClusterConfig(c *config.Customer) *ClusterConfig {
 	Vdcs := make(map[string]*Vdc)
-	for vname := range config.Customers[customer].VDCs {
-		Vdcs[vname] = &Vdc{
-			ConfigName: vname,
+	for _, vdc := range c.VDCs {
+		Vdcs[vdc.VdcName] = &Vdc{
+			ConfigName: vdc.VdcName,
 			// content of NodeInfo will be filled by Refresh()
 			NodeInfo: make(map[string]*Node),
 		}
 	}
-	return &ClusterConfig{customer, config.Customers[customer].CfgRefreshInterval, Vdcs}
+	return &ClusterConfig{c.CustomerName, c.CfgRefreshInterval, Vdcs}
 }
 
 // ClusterConfig ...

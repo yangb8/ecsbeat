@@ -37,17 +37,16 @@ func (e *EcsCluster) Refresh(addnode bool) {
 }
 
 // NewEcsCluster ...
-func NewEcsCluster(customer string, config config.Config) *EcsCluster {
-	properties := config.Customers[customer]
+func NewEcsCluster(c *config.Customer) *EcsCluster {
 	return &EcsCluster{
-		Config: GetClusterConfig(customer, config),
+		Config: GetClusterConfig(c),
 		Client: ecs.NewMgmtClient(
 			"ecs",
-			properties.Username,
-			properties.Password,
-			GetEcsFromConfig(customer, config),
-			properties.ReqTimeOut,
-			properties.BlockDuration),
+			c.Username,
+			c.Password,
+			GetEcsFromConfig(c),
+			c.ReqTimeOut,
+			c.BlockDuration),
 	}
 }
 
@@ -71,8 +70,8 @@ func NewEcsClusters(config config.Config) *EcsClusters {
 		}
 	}
 
-	for customer := range config.Customers {
-		ec.EcsSlice = append(ec.EcsSlice, NewEcsCluster(customer, config))
+	for _, customer := range config.Customers {
+		ec.EcsSlice = append(ec.EcsSlice, NewEcsCluster(customer))
 	}
 
 	return &ec
