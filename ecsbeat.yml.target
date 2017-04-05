@@ -50,54 +50,67 @@ ecsbeat:
       type: auditevent
       level: vdc
       interval: 60s # must be multiple of 60s
+      enabled: true
     - uri: /vdc/alerts.json
       type: alert
       level: vdc
       interval: 60s # must be multiple of 60s
+      enabled: true
     - uri: /vdc/alerts/latest.json
       type: latestalert
       level: vdc
       interval: 60s
+      enabled: true
     - uri: /dashboard/zones/localzone?dataType=current
       type: localzone
       level: vdc
       interval: 0
+      enabled: true
     - uri: /dashboard/zones/localzone/nodes?dataType=current
       type: nodes
       level: vdc
       interval: 0
+      enabled: true
     - uri: /dashboard/zones/localzone/replicationgroups?dataType=current
       type: replicationgroups
       level: vdc
       interval: 0
+      enabled: true
     - uri: /dashboard/zones/localzone/storagepools?dataType=current
       type: storagepools
       level: vdc
       interval: 0
+      enabled: true
     - uri: /dashboard/nodes/%s/disks?dataType=current
       type: disks
       level: node
       interval: 0
+      enabled: true
     - uri: /dashboard/nodes/%s/processes?dataType=current
       type: processes
       level: node
       interval: 0
+      enabled: true
     - uri: /object/capacity.json
       type: capacity
       level: system
       interval: 0
+      enabled: true
     - uri: /object/billing/namespace/info.json?include_bucket_detail=false
       type: nsbilling
       level: system
       interval: 600s
+      enabled: true
     - uri: /object/billing/namespace/sample.json?include_bucket_detail=false
       type: nsbillingsample
       level: system
       interval: 600s # must be multiple of 300s
+      enabled: true
     - uri: dummy
       type: dtinfo
       level: dtinfo # dtinfo is specially handled
       interval: 600s
+      enabled: true
 
 #================================ General =====================================
 
