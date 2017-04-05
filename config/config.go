@@ -12,6 +12,7 @@ type Config struct {
 		Type     string        `config:"type"`
 		Level    string        `config:"level"`
 		Interval time.Duration `config:"interval"`
+		Enabled  bool          `config:"enabled"`
 	} `config:"commands"`
 	Customers map[string]struct {
 		Username           string        `config:"username"`

@@ -61,12 +61,14 @@ type EcsClusters struct {
 func NewEcsClusters(config config.Config) *EcsClusters {
 	ec := EcsClusters{}
 	for _, c := range config.Commands {
-		interval := config.Period
-		// Overwrite default interval by command level interval
-		if c.Interval > 0 {
-			interval = c.Interval
+		if c.Enabled {
+			interval := config.Period
+			// Overwrite default interval by command level interval
+			if c.Interval > 0 {
+				interval = c.Interval
+			}
+			ec.Cmds = append(ec.Cmds, &Command{c.URI, c.Type, c.Level, interval})
 		}
-		ec.Cmds = append(ec.Cmds, &Command{c.URI, c.Type, c.Level, interval})
 	}
 
 	for customer := range config.Customers {
