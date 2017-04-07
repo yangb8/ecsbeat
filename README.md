@@ -9,7 +9,7 @@ Ensure env variables GOPATH and GOROOT are set properly, and this folder is at t
 
 ### Requirements
 
-* [Golang](https://golang.org/dl/) 1.7
+* [Golang](https://golang.org/dl/) 1.8
 * [glide](https://github.com/Masterminds/glide)
 
 ### Init Project
