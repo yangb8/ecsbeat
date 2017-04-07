@@ -51,11 +51,11 @@ func (v *Vdc) NextAvailableNode() (string, error) {
 
 // BlockNode is to block node in prefined duration
 func (v *Vdc) BlockNode(host string, dur time.Duration) {
-	for _, n := range v.Nodes {
-		if n.host == host {
+	for i := 0; i < len(v.Nodes); i++ {
+		if v.Nodes[i].host == host {
 			v.Lock()
 			defer v.Unlock()
-			n.blockedUntil = time.Now().Add(dur)
+			v.Nodes[i].blockedUntil = time.Now().Add(dur)
 			return
 		}
 	}
