@@ -13,7 +13,7 @@ ecsbeat:
       password: ChangeMe         # mgmt password
       tokenexpiry: 3500s         # token valid period. shall set this timer a little smaller than ECS token valid period
       reqtimeout: 30s            # request timeout
-      blockduration: 180s        # how long a node shall stay in blacklist if request to this node times out. 0s for not blocking
+      blockduration: 0s          # how long a node shall stay in blacklist if request to this node times out. 0s for not blocking
       cfgrefreshinterval: 3600s  # How frequent to update VDC and node names. Generally, default value is good enough because these info is almost never changed
       vdcs:
         - vdcname: VDC1          # VDC name, could be anything as long as each VDC has different name

@@ -1,89 +1,168 @@
 {
-  "mappings": {
-    "_default_": {
-      "_all": {
-        "norms": false
+  "mappings":{
+    "_default_":{
+      "_all":{
+        "norms":false
       },
-      "_meta": {
-        "version": "5.2.2"
+      "_meta":{
+        "version":"5.2.2"
       },
-      "dynamic_templates": [
-        {
-          "strings_as_keyword": {
-            "mapping": {
-              "ignore_above": 1024,
-              "type": "keyword"
-            },
-            "match_mapping_type": "string"
-          }
-        }
-      ],
-      "properties": {
-        "@timestamp": {
-          "type": "date"
+      "properties":{
+        "@timestamp":{
+          "type":"date"
         },
-        "beat": {
-          "properties": {
-            "hostname": {
-              "ignore_above": 1024,
-              "type": "keyword"
+        "beat":{
+          "properties":{
+            "hostname":{
+              "ignore_above":1024,
+              "type":"keyword"
             },
-            "name": {
-              "ignore_above": 1024,
-              "type": "keyword"
+            "name":{
+              "ignore_above":1024,
+              "type":"keyword"
             },
-            "version": {
-              "ignore_above": 1024,
-              "type": "keyword"
+            "version":{
+              "ignore_above":1024,
+              "type":"keyword"
             }
           }
         },
-        "counter": {
-          "type": "long"
+        "counter":{
+          "type":"long"
         },
-        "meta": {
-          "properties": {
-            "cloud": {
-              "properties": {
-                "availability_zone": {
-                  "ignore_above": 1024,
-                  "type": "keyword"
+        "meta":{
+          "properties":{
+            "cloud":{
+              "properties":{
+                "availability_zone":{
+                  "ignore_above":1024,
+                  "type":"keyword"
                 },
-                "instance_id": {
-                  "ignore_above": 1024,
-                  "type": "keyword"
+                "instance_id":{
+                  "ignore_above":1024,
+                  "type":"keyword"
                 },
-                "machine_type": {
-                  "ignore_above": 1024,
-                  "type": "keyword"
+                "machine_type":{
+                  "ignore_above":1024,
+                  "type":"keyword"
                 },
-                "project_id": {
-                  "ignore_above": 1024,
-                  "type": "keyword"
+                "project_id":{
+                  "ignore_above":1024,
+                  "type":"keyword"
                 },
-                "provider": {
-                  "ignore_above": 1024,
-                  "type": "keyword"
+                "provider":{
+                  "ignore_above":1024,
+                  "type":"keyword"
                 },
-                "region": {
-                  "ignore_above": 1024,
-                  "type": "keyword"
+                "region":{
+                  "ignore_above":1024,
+                  "type":"keyword"
                 }
               }
             }
           }
         },
-        "tags": {
-          "ignore_above": 1024,
-          "type": "keyword"
+        "tags":{
+          "ignore_above":1024,
+          "type":"keyword"
         }
-      }
+      },
+      "dynamic_templates":[
+        {
+          "boolean_acknowledged":{
+            "match":"acknowledged",
+            "mapping":{
+              "type":"boolean"
+            }
+          }
+        },
+        {
+          "integer_disks":{
+            "match":"*Disks",
+            "mapping":{
+              "type":"integer"
+            }
+          }
+        },
+        {
+          "longint_space":{
+            "match":"*Current_Space",
+            "mapping":{
+              "type":"long"
+            }
+          }
+        },
+        {
+          "longint_bytes":{
+            "match":"*Current_Bytes",
+            "mapping":{
+              "type":"long"
+            }
+          }
+        },
+        {
+          "longint_latency":{
+            "match":"*Current_Latency",
+            "mapping":{
+              "type":"long"
+            }
+          }
+        },
+        {
+          "longint_size":{
+            "match":"*Current_TotalSize",
+            "mapping":{
+              "type":"long"
+            }
+          }
+        },
+        {
+          "float_percent":{
+            "match":"*Current_Percent",
+            "mapping":{
+              "type":"float"
+            }
+          }
+        },
+        {
+          "float_bandwidth":{
+            "match":"*Current_Bandwidth",
+            "mapping":{
+              "type":"float"
+            }
+          }
+        },
+        {
+          "float_tps":{
+            "match":"*Current_TPS",
+            "mapping":{
+              "type":"float"
+            }
+          }
+        },
+        {
+          "float_rate":{
+            "match":"*Current_Rate",
+            "mapping":{
+              "type":"float"
+            }
+          }
+        },
+        {
+          "float_avgsize":{
+            "match":"*AvgSize",
+            "mapping":{
+              "type":"float"
+            }
+          }
+        }
+      ]
     }
   },
-  "order": 0,
-  "settings": {
-    "index.mapping.total_fields.limit": 10000,
-    "index.refresh_interval": "5s"
+  "order":10,
+  "settings":{
+    "index.mapping.total_fields.limit":10000,
+    "index.refresh_interval":"5s"
   },
-  "template": "ecsbeat-*"
+  "template":"ecsbeat-*"
 }
