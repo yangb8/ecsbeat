@@ -235,7 +235,16 @@ func GenerateEvents(cmd *Command, config *ClusterConfig, client *ecs.MgmtClient,
 			}
 			for _, d := range decoded {
 				transformEvent(d)
-				addCommonFields(d, config, vdc.ConfigName, "", cmd.Type)
+				if cmd.Type == "nodes" {
+					// add node ip if there is "id" field and its content is node ip
+					if id, ok := d["id"]; ok {
+						if ip, ok := id.(string); ok {
+							addCommonFields(d, config, vdc.ConfigName, ip, cmd.Type)
+						}
+					}
+				} else {
+					addCommonFields(d, config, vdc.ConfigName, "", cmd.Type)
+				}
 				if !writeEvent(done, out, common.MapStr(d)) {
 					return false, nil
 				}
