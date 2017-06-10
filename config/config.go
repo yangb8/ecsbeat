@@ -25,6 +25,7 @@ type Customer struct {
 // Config ...
 type Config struct {
 	Period   time.Duration `config:"period"`
+	Once     bool          `config:"once"`
 	Commands []*struct {
 		URI      string        `config:"uri"`
 		Type     string        `config:"type"`

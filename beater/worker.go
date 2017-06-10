@@ -23,7 +23,7 @@ func NewWorker(cmd *Command, ecsClusters *EcsClusters) *Worker {
 }
 
 // Start should be called only once in the life of a Worker.
-func (w *Worker) Start(done <-chan struct{}) <-chan common.MapStr {
+func (w *Worker) Start(done <-chan struct{}, once bool) <-chan common.MapStr {
 	debugf("Starting %s", w)
 	defer debugf("Stopped %s", w)
 
@@ -33,7 +33,7 @@ func (w *Worker) Start(done <-chan struct{}) <-chan common.MapStr {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		w.startFetching(done, out)
+		w.startFetching(done, out, once)
 	}()
 
 	go func() {
@@ -44,7 +44,7 @@ func (w *Worker) Start(done <-chan struct{}) <-chan common.MapStr {
 	return out
 }
 
-func (w *Worker) startFetching(done <-chan struct{}, out chan<- common.MapStr) {
+func (w *Worker) startFetching(done <-chan struct{}, out chan<- common.MapStr, once bool) {
 	debugf("Starting %s", w)
 	defer debugf("Stopped %s", w)
 
@@ -52,6 +52,10 @@ func (w *Worker) startFetching(done <-chan struct{}, out chan<- common.MapStr) {
 	err := w.fetch(done, out)
 	if err != nil {
 		logp.Err("%v", err)
+	}
+
+	if once {
+		return
 	}
 
 	// Start timer for future fetches.
