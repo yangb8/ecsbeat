@@ -62,7 +62,7 @@ func (bt *Ecsbeat) Run(b *beat.Beat) error {
 
 	var cs []<-chan common.MapStr
 	for _, w := range bt.workers {
-		cs = append(cs, w.Start(bt.done))
+		cs = append(cs, w.Start(bt.done, bt.config.Once))
 	}
 
 	wg.Add(1)

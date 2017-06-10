@@ -5,6 +5,8 @@ ecsbeat:
   # Defines how often an event is fetched from ecs and sent to the output
   # Can use command level interval to overwrite it
   period: 300s
+  # only fetch once for each metricset then exit, period and internval are ignored if set to true
+  once: false
 
   # Customer ECS Setup
   customers:
