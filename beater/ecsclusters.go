@@ -25,11 +25,10 @@ func (e *EcsCluster) Refresh(addnode bool) {
 		if nodesResp, err := ecs.GetNodes(e.Client, vname); err == nil {
 			for _, n := range nodesResp.Node {
 				if _, ok := ventry.NodeInfo[n.IP]; ok {
-					ventry.NodeInfo[n.IP].Update(n.IP, n.Nodename, n.Version)
+					ventry.NodeInfo[n.IP].Update(n.NodeID, n.IP, n.Nodename, n.Version)
 				} else if addnode {
-					ventry.NodeInfo[n.IP] = &Node{IP: n.IP, Name: n.Nodename, Version: n.Version}
+					ventry.NodeInfo[n.IP] = &Node{ID: n.NodeID, IP: n.IP, Name: n.Nodename, Version: n.Version}
 				}
-
 			}
 		}
 		// TODO log error

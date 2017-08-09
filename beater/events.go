@@ -113,7 +113,7 @@ func addEntryToEvent(event map[string]interface{}, key string, value interface{}
 func transformEvent(event map[string]interface{}) {
 	delete(event, "_links")
 	for k, v := range event {
-		if strings.HasSuffix(k, "Current") {
+		if strings.HasSuffix(k, "Current") || strings.HasSuffix(k, "CurrentL1") || strings.HasSuffix(k, "CurrentL2") {
 			if mapEntry, ok := v.(map[string]interface{}); ok {
 				for k1, v2 := range mapEntry {
 					addEntryToEvent(event, k+"_"+k1, v2)
@@ -135,7 +135,7 @@ func addCommonFields(event map[string]interface{}, config *ClusterConfig, vdc, n
 	if v, ok := config.Vdcs[vdc]; ok {
 		event["ecs-vdc-cfgname"], event["ecs-vdc-id"], event["ecs-vdc-name"] = v.Get()
 		if n, ok := v.NodeInfo[node]; ok {
-			event["ecs-node-ip"], event["ecs-node-name"], event["ecs-version"] = n.Get()
+			_, event["ecs-node-ip"], event["ecs-node-name"], event["ecs-version"] = n.Get()
 		}
 	}
 }
@@ -236,10 +236,9 @@ func GenerateEvents(cmd *Command, config *ClusterConfig, client *ecs.MgmtClient,
 			for _, d := range decoded {
 				transformEvent(d)
 				if cmd.Type == "nodes" {
-					// add node ip if there is "id" field and its content is node ip
 					if id, ok := d["id"]; ok {
-						if ip, ok := id.(string); ok {
-							addCommonFields(d, config, vdc.ConfigName, ip, cmd.Type)
+						if idstr, ok := id.(string); ok {
+							addCommonFields(d, config, vdc.ConfigName, vdc.GetIpById(idstr), cmd.Type)
 						}
 					}
 				} else {
@@ -253,7 +252,7 @@ func GenerateEvents(cmd *Command, config *ClusterConfig, client *ecs.MgmtClient,
 	case "node":
 		for vname, vdc := range config.Vdcs {
 			for _, node := range vdc.NodeInfo {
-				resp, err := client.GetQuery(getFilledURI(cmd, node.IP), vname)
+				resp, err := client.GetQuery(getFilledURI(cmd, node.ID), vname)
 				if err != nil {
 					logp.Err("%s: %v", cmd.Type, err)
 					return true, err

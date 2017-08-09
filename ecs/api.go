@@ -53,7 +53,7 @@ type Nodes struct {
 	Node []struct {
 		IP       string `json:"ip"`
 		IsLocal  bool   `json:"isLocal"`
-		Nodeid   string `json:"nodeid"`
+		NodeID   string `json:"nodeid"`
 		Nodename string `json:"nodename"`
 		RackID   string `json:"rackId"`
 		Version  string `json:"version"`

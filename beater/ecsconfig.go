@@ -70,8 +70,20 @@ func (v *Vdc) Get() (string, string, string) {
 	return v.ConfigName, v.ID, v.Name
 }
 
+func (v *Vdc) GetIpById(id string) string {
+	v.mutex.RLock()
+	defer v.mutex.RUnlock()
+	for _, n := range v.NodeInfo {
+		if n.ID == id {
+			return n.IP
+		}
+	}
+	return ""
+}
+
 // Node ...
 type Node struct {
+	ID      string `json:"ecs-node-id"`
 	IP      string `json:"ecs-node-ip"`
 	Name    string `json:"ecs-node-Name"`
 	Version string `json:"ecs-version"`
@@ -79,19 +91,20 @@ type Node struct {
 }
 
 // Update ...
-func (n *Node) Update(ip, name, version string) {
+func (n *Node) Update(id, ip, name, version string) {
 	n.mutex.Lock()
 	defer n.mutex.Unlock()
+	n.ID = id
 	n.IP = ip
 	n.Name = name
 	n.Version = version
 }
 
 // Get ...
-func (n *Node) Get() (string, string, string) {
+func (n *Node) Get() (string, string, string, string) {
 	n.mutex.RLock()
 	defer n.mutex.RUnlock()
-	return n.IP, n.Name, n.Version
+	return n.ID, n.IP, n.Name, n.Version
 }
 
 func convertMapStringInterface(val interface{}) map[string]interface{} {
