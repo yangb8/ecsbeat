@@ -183,38 +183,58 @@ func GenerateEvents(cmd *Command, config *ClusterConfig, client *ecs.MgmtClient,
 				nsList := struct {
 					ID []string `json:"id"`
 				}{}
-				for _, v := range ids {
-					nsList.ID = append(nsList.ID, v)
-				}
 
-				body := new(bytes.Buffer)
-				json.NewEncoder(body).Encode(nsList)
-				headers := http.Header{}
-				headers.Set("Content-Type", "application/json")
-				resp, err = client.PostQuery(getFilledURI(cmd, ""), body, 0, headers, vname)
+				for i, v := range ids {
+					nsList.ID = append(nsList.ID, v)
+					if len(nsList.ID) == 100 || i == len(ids)-1 {
+						body := new(bytes.Buffer)
+						json.NewEncoder(body).Encode(nsList)
+						headers := http.Header{}
+						headers.Set("Content-Type", "application/json")
+						resp, err = client.PostQuery(getFilledURI(cmd, ""), body, 0, headers, vname)
+						if err != nil {
+							logp.Err("%s: %v", cmd.Type, err)
+							return true, err
+						}
+						// sometimes, ECS returns nil response for nsbillingsample
+						if resp == nil {
+							logp.Err("%s: %v", cmd.Type, err)
+							return true, ErrInvalidResponseContent
+						}
+						decoded, err := DecodeResponse(resp)
+						resp.Body.Close()
+						if err != nil {
+							logp.Err("%s: %v", cmd.Type, err)
+							return true, err
+						}
+						for _, d := range decoded {
+							transformEvent(d)
+							addCommonFields(d, config, "", "", cmd.Type)
+							if !writeEvent(done, out, common.MapStr(d)) {
+								return false, nil
+							}
+						}
+						nsList.ID = []string{}
+					}
+				}
 			} else {
 				resp, err = client.GetQuery(getFilledURI(cmd, ""), vname)
-			}
-			if err != nil {
-				logp.Err("%s: %v", cmd.Type, err)
-				return true, err
-			}
-			// sometimes, ECS returns nil response for nsbillingsample
-			if resp == nil {
-				logp.Err("%s: %v", cmd.Type, err)
-				return true, ErrInvalidResponseContent
-			}
-			decoded, err := DecodeResponse(resp)
-			resp.Body.Close()
-			if err != nil {
-				logp.Err("%s: %v", cmd.Type, err)
-				return true, err
-			}
-			for _, d := range decoded {
-				transformEvent(d)
-				addCommonFields(d, config, "", "", cmd.Type)
-				if !writeEvent(done, out, common.MapStr(d)) {
-					return false, nil
+				if err != nil {
+					logp.Err("%s: %v", cmd.Type, err)
+					return true, err
+				}
+				decoded, err := DecodeResponse(resp)
+				resp.Body.Close()
+				if err != nil {
+					logp.Err("%s: %v", cmd.Type, err)
+					return true, err
+				}
+				for _, d := range decoded {
+					transformEvent(d)
+					addCommonFields(d, config, "", "", cmd.Type)
+					if !writeEvent(done, out, common.MapStr(d)) {
+						return false, nil
+					}
 				}
 			}
 			break
